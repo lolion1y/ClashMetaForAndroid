@@ -24,7 +24,7 @@ class MainApplication : Application() {
         super.onCreate()
 
         val processName = currentProcessName
-        extractGeoFiles()
+        // extractGeoFiles()
 
         Log.d("Process $processName started")
 
