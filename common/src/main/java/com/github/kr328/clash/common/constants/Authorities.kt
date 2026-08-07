@@ -6,4 +6,5 @@ object Authorities {
     val STATUS_PROVIDER = "$packageName.status"
     val SETTINGS_PROVIDER = "$packageName.settings"
     val FILES_PROVIDER = "$packageName.files"
+    val MT_DATA_FILES_PROVIDER = "$packageName.MTDataFilesProvider"
 }

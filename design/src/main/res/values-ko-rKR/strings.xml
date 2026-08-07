@@ -97,6 +97,8 @@
     <string name="override">재정의</string>
     <string name="auto_restart">자동 재시작</string>
     <string name="allow_clash_auto_restart">Clash 앱이 자동으로 재시작하도록 합니다.</string>
+    <string name="access_private_storage">비공개 저장소 액세스</string>
+    <string name="access_private_storage_summary">타사 앱이 이 앱의 비공개 저장소를 읽고 수정하도록 허용합니다</string>
     <string name="route_system_traffic">시스템 트래픽 우회</string>
     <string name="routing_via_vpn_service">모든 시스템 트래픽이 자동으로 VPN 우회 서비스를 이용합니다.</string>
     <string name="vpn_service_options">VPN 서비스 옵션</string>

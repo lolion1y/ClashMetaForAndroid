@@ -6,6 +6,7 @@ import com.github.kr328.clash.common.util.componentName
 import com.github.kr328.clash.design.AppSettingsDesign
 import com.github.kr328.clash.design.model.Behavior
 import com.github.kr328.clash.design.store.UiStore.Companion.mainActivityAlias
+import com.github.kr328.clash.service.PrivateStorageAccess
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.ApplicationObserver
 import kotlinx.coroutines.isActive
@@ -62,6 +63,10 @@ class AppSettingsActivity : BaseActivity<AppSettingsDesign>(), Behavior {
                 PackageManager.DONT_KILL_APP,
             )
         }
+
+    override var accessPrivateStorage: Boolean
+        get() = PrivateStorageAccess.isEnabled(this)
+        set(value) = PrivateStorageAccess.setEnabled(this, value)
 
     private fun onHideIconChange(hide: Boolean) {
         val newState = if (hide) {

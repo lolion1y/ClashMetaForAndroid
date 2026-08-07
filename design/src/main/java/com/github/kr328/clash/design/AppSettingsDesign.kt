@@ -48,6 +48,13 @@ class AppSettingsDesign(
                 summary = R.string.allow_clash_auto_restart,
             )
 
+            switch(
+                value = behavior::accessPrivateStorage,
+                icon = R.drawable.ic_outline_folder,
+                title = R.string.access_private_storage,
+                summary = R.string.access_private_storage_summary,
+            )
+
             category(R.string.interface_)
 
             selectableList(

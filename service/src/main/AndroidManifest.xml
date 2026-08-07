@@ -58,6 +58,18 @@
             </intent-filter>
         </provider>
         <provider
+            android:name=".PrivateStorageProvider"
+            android:authorities="${applicationId}.MTDataFilesProvider"
+            android:enabled="false"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS"
+            android:process=":background">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+        <provider
             android:name=".StatusProvider"
             android:authorities="${applicationId}.status"
             android:exported="false"
