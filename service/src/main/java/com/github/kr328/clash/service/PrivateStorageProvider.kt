@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
+import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
@@ -18,6 +19,7 @@ import android.provider.DocumentsContract
 import android.provider.DocumentsProvider
 import android.system.Os
 import android.system.OsConstants
+import android.system.StructStat
 import android.webkit.MimeTypeMap
 import com.github.kr328.clash.common.constants.Authorities
 import java.io.File
@@ -137,7 +139,14 @@ class PrivateStorageProvider : DocumentsProvider() {
                 throw FileNotFoundException("Too many files in $parentDocumentId")
 
             files.forEach {
-                cursor.appendFileInfo(parentDocumentId.appendChild(it.name), it)
+                val stat = try {
+                    Os.lstat(it.path)
+                } catch (_: Exception) {
+                    return@forEach
+                }
+
+                if (stat.isSupportedDocument)
+                    cursor.appendFileInfo(parentDocumentId.appendChild(it.name), it)
             }
         }
 
@@ -152,11 +161,21 @@ class PrivateStorageProvider : DocumentsProvider() {
     ): ParcelFileDescriptor {
         enforceAccess()
 
-        val file = retrieveFile(documentId, followLinks = true)
+        val file = retrieveFile(documentId)
             ?: throw FileNotFoundException("$documentId not found")
-        ensureNotSymbolicLink(file, documentId)
+        val stat = try {
+            Os.lstat(file.path)
+        } catch (_: Exception) {
+            throw FileNotFoundException("$documentId not found")
+        }
 
-        return ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode(mode))
+        return when {
+            OsConstants.S_ISREG(stat.st_mode) ->
+                ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode(mode))
+            OsConstants.S_ISLNK(stat.st_mode) && mode == "r" ->
+                openSymbolicLink(file, documentId, signal)
+            else -> throw FileNotFoundException("Unable to open document $documentId")
+        }
     }
 
     @Synchronized
@@ -166,21 +185,23 @@ class PrivateStorageProvider : DocumentsProvider() {
         displayName: String
     ): String {
         enforceAccess()
-        validateName(displayName)
 
         val directory = retrieveDirectory(parentDocumentId)
-
-        var file = File(directory, displayName)
-        var index = 2
-
-        while (file.existsWithoutFollowingLinks)
-            file = File(directory, "$displayName (${index++})")
+        val isDirectory = mimeType.substringBefore(';').trim().equals(
+            DocumentsContract.Document.MIME_TYPE_DIR,
+            ignoreCase = true,
+        )
+        val normalizedName = if (isDirectory)
+            displayName.also(::validateName)
+        else
+            normalizeDisplayName(mimeType, displayName)
+        val file = directory.buildUniqueFile(normalizedName)
 
         val documentId = parentDocumentId.appendChild(file.name)
         validateDocumentId(documentId)
 
         val created = try {
-            if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType)
+            if (isDirectory)
                 file.mkdirs()
             else
                 file.createNewFile()
@@ -205,8 +226,6 @@ class PrivateStorageProvider : DocumentsProvider() {
 
     @Synchronized
     override fun deleteDocument(documentId: String) {
-        enforceAccess()
-
         deleteDocument(documentId, revokeRootPermission = false)
     }
 
@@ -280,7 +299,7 @@ class PrivateStorageProvider : DocumentsProvider() {
                 "Failed to rename document $documentId with name $displayName"
             )
 
-        staleDocumentIds.drop(1).forEach(::revokePermission)
+        deferRevocations(staleDocumentIds)
 
         return targetDocumentId
     }
@@ -296,22 +315,74 @@ class PrivateStorageProvider : DocumentsProvider() {
         val stat = try {
             Os.lstat(file.path)
         } catch (_: Exception) {
-            return file.mimeType
+            throw FileNotFoundException("$documentId not found")
         }
 
-        if (OsConstants.S_ISLNK(stat.st_mode))
-            return file.mimeType
+        return when {
+            OsConstants.S_ISDIR(stat.st_mode) -> DocumentsContract.Document.MIME_TYPE_DIR
+            OsConstants.S_ISREG(stat.st_mode) -> file.mimeType
+            OsConstants.S_ISLNK(stat.st_mode) -> MIME_TYPE_SYMLINK
+            else -> throw FileNotFoundException("Unsupported document $documentId")
+        }
+    }
 
-        val accessibleFile = try {
-            retrieveFile(documentId, followLinks = true)
+    @Synchronized
+    override fun getDocumentStreamTypes(
+        documentId: String,
+        mimeTypeFilter: String
+    ): Array<String>? {
+        enforceAccess()
+        validateDocumentIdSyntax(documentId)
+        enforceReadPermission(documentId)
+
+        val file = retrieveFile(documentId)
+            ?: return null
+        val stat = try {
+            Os.lstat(file.path)
         } catch (_: Exception) {
-            null
+            return null
         }
 
-        return if (accessibleFile?.isDirectory == true)
-            DocumentsContract.Document.MIME_TYPE_DIR
-        else
-            file.mimeType
+        if (OsConstants.S_ISLNK(stat.st_mode)) {
+            return if (mimeTypeFilter.matchesMimeType(MIME_TYPE_SYMLINK_STREAM))
+                arrayOf(MIME_TYPE_SYMLINK_STREAM)
+            else
+                null
+        }
+
+        return super.getDocumentStreamTypes(documentId, mimeTypeFilter)
+    }
+
+    @Synchronized
+    override fun openTypedDocument(
+        documentId: String,
+        mimeTypeFilter: String,
+        opts: Bundle?,
+        signal: CancellationSignal?
+    ): AssetFileDescriptor {
+        enforceAccess()
+        validateDocumentIdSyntax(documentId)
+        enforceReadPermission(documentId)
+
+        if (!mimeTypeFilter.matchesMimeType(MIME_TYPE_SYMLINK_STREAM))
+            throw FileNotFoundException("Unsupported MIME type $mimeTypeFilter")
+
+        val file = retrieveFile(documentId)
+            ?: throw FileNotFoundException("$documentId not found")
+        val stat = try {
+            Os.lstat(file.path)
+        } catch (_: Exception) {
+            throw FileNotFoundException("$documentId not found")
+        }
+
+        if (!OsConstants.S_ISLNK(stat.st_mode))
+            throw FileNotFoundException("$documentId is not a symbolic link")
+
+        return AssetFileDescriptor(
+            openSymbolicLink(file, documentId, signal),
+            0,
+            AssetFileDescriptor.UNKNOWN_LENGTH,
+        )
     }
 
     @Synchronized
@@ -433,10 +504,6 @@ class PrivateStorageProvider : DocumentsProvider() {
                 documentId,
             )
             if (currentContext.checkCallingOrSelfUriPermission(
-                    treeUri,
-                    readPermission,
-                ) == PackageManager.PERMISSION_GRANTED ||
-                currentContext.checkCallingOrSelfUriPermission(
                     treeDocumentUri,
                     readPermission,
                 ) == PackageManager.PERMISSION_GRANTED
@@ -665,9 +732,84 @@ class PrivateStorageProvider : DocumentsProvider() {
             throw FileNotFoundException("Unable to follow symbolic link $documentId")
     }
 
+    private fun openSymbolicLink(
+        file: File,
+        documentId: String,
+        signal: CancellationSignal?,
+    ): ParcelFileDescriptor {
+        signal?.throwIfCanceled()
+
+        val pipe = ParcelFileDescriptor.createReliablePipe()
+        try {
+            ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use {
+                it.write(Os.readlink(file.path).toByteArray(Charsets.UTF_8))
+            }
+        } catch (e: Exception) {
+            try {
+                pipe[0].close()
+            } catch (_: Exception) {
+            }
+            try {
+                pipe[1].close()
+            } catch (_: Exception) {
+            }
+
+            throw FileNotFoundException("Unable to open symbolic link $documentId").apply {
+                initCause(e)
+            }
+        }
+
+        return pipe[0]
+    }
+
     private fun validateName(name: String) {
         if (!name.isValidPathSegment)
             throw FileNotFoundException("Invalid name $name")
+    }
+
+    private fun normalizeDisplayName(mimeType: String, displayName: String): String {
+        validateName(displayName)
+
+        val normalizedMimeType = mimeType.substringBefore(';').trim().lowercase()
+        if (normalizedMimeType.isEmpty() || '/' !in normalizedMimeType ||
+            '*' in normalizedMimeType
+        ) throw FileNotFoundException("Unsupported MIME type $mimeType")
+
+        if (normalizedMimeType == MIME_TYPE_OCTET_STREAM)
+            return displayName
+
+        val mimeTypeMap = MimeTypeMap.getSingleton()
+        val currentExtension = displayName.substringAfterLast('.', "")
+        val currentMimeType = currentExtension.takeIf { it.isNotEmpty() }?.let {
+            mimeTypeMap.getMimeTypeFromExtension(it.lowercase())
+        }
+        val targetExtension = mimeTypeMap.getExtensionFromMimeType(normalizedMimeType)
+        if (normalizedMimeType.equals(currentMimeType, ignoreCase = true) ||
+            currentExtension.equals(targetExtension, ignoreCase = true)
+        ) return displayName
+
+        if (!targetExtension.isNullOrEmpty()) {
+            return "$displayName.$targetExtension".also(::validateName)
+        }
+
+        return displayName
+    }
+
+    private fun File.buildUniqueFile(displayName: String): File {
+        val extensionIndex = displayName.lastIndexOf('.').takeIf {
+            it > 0 && it < displayName.lastIndex
+        }
+        val baseName = extensionIndex?.let(displayName::substring) ?: displayName
+        val extension = extensionIndex?.let { displayName.substring(it) }.orEmpty()
+
+        var file = resolve(displayName)
+        var index = 2
+        while (file.existsWithoutFollowingLinks) {
+            val name = "$baseName (${index++})$extension"
+            file = resolve(name)
+        }
+
+        return file
     }
 
     private fun MatrixCursor.appendFileInfo(
@@ -699,22 +841,22 @@ class PrivateStorageProvider : DocumentsProvider() {
         } catch (_: Exception) {
             throw FileNotFoundException("$documentId not found")
         }
-        val accessibleFile = try {
-            retrieveFile(documentId, followLinks = true)
-        } catch (_: Exception) {
-            null
-        }
         val isSymbolicLink = OsConstants.S_ISLNK(stat.st_mode)
-        val isDirectory = !isSymbolicLink &&
-                accessibleFile?.isDirectory == true
+        val isDirectory = OsConstants.S_ISDIR(stat.st_mode)
+        val isRegularFile = OsConstants.S_ISREG(stat.st_mode)
+        if (!isDirectory && !isRegularFile && !isSymbolicLink)
+            throw FileNotFoundException("Unsupported document $documentId")
+
         val isRootDirectory = rootDirectories.values.any {
             it.absolutePath == finalFile.absolutePath
         }
 
-        var flags = if (isDirectory && accessibleFile?.canWrite() == true)
+        var flags = if (isDirectory && finalFile.canWrite())
             DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE
-        else if (!isDirectory && !isSymbolicLink && accessibleFile?.canWrite() == true)
+        else if (isRegularFile && finalFile.canWrite())
             DocumentsContract.Document.FLAG_SUPPORTS_WRITE
+        else if (isSymbolicLink)
+            DocumentsContract.Document.FLAG_VIRTUAL_DOCUMENT
         else
             0
 
@@ -737,6 +879,8 @@ class PrivateStorageProvider : DocumentsProvider() {
                 DocumentsContract.Document.COLUMN_MIME_TYPE,
                 if (isDirectory)
                     DocumentsContract.Document.MIME_TYPE_DIR
+                else if (isSymbolicLink)
+                    MIME_TYPE_SYMLINK
                 else
                     finalFile.mimeType,
             )
@@ -796,6 +940,8 @@ class PrivateStorageProvider : DocumentsProvider() {
 
         if (revokeRootPermission)
             revokePermission(documentId)
+        else
+            revokeTreeDocumentPermissions(documentId)
 
         return true
     }
@@ -835,9 +981,30 @@ class PrivateStorageProvider : DocumentsProvider() {
     }
 
     private fun revokePermission(documentId: String) {
-        try {
-            revokeDocumentPermission(documentId)
-        } catch (_: Exception) {
+        revokeDocumentPermission(documentId)
+        revokeTreeDocumentPermissions(documentId)
+    }
+
+    private fun revokeTreeDocumentPermissions(documentId: String) {
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        var treeDocumentId = documentId
+
+        while (true) {
+            val treeUri = DocumentsContract.buildTreeDocumentUri(
+                Authorities.MT_DATA_FILES_PROVIDER,
+                treeDocumentId,
+            )
+            val treeDocumentUri = DocumentsContract.buildDocumentUriUsingTree(
+                treeUri,
+                documentId,
+            )
+            context!!.revokeUriPermission(treeDocumentUri, flags)
+
+            if (treeDocumentId == rootDocumentId)
+                break
+
+            treeDocumentId = treeDocumentId.substringBeforeLast('/')
         }
     }
 
@@ -855,7 +1022,6 @@ class PrivateStorageProvider : DocumentsProvider() {
             putString("message", message)
     }
 
-    @Suppress("DEPRECATION")
     private val Bundle.documentUri: Uri?
         get() = uri(EXTRA_URI)
 
@@ -871,20 +1037,23 @@ class PrivateStorageProvider : DocumentsProvider() {
         private const val COLUMN_MT_PATH = "mt_path"
         private const val COLUMN_MT_EXTRAS = "mt_extras"
 
+        private const val MIME_TYPE_OCTET_STREAM = "application/octet-stream"
+        private const val MIME_TYPE_SYMLINK = "application/x-symlink"
+        private const val MIME_TYPE_SYMLINK_STREAM = "text/plain"
+
         private const val METHOD_RENAME_DOCUMENT = "android:renameDocument"
         private const val METHOD_MOVE_DOCUMENT = "android:moveDocument"
         private const val METHOD_REMOVE_DOCUMENT = "android:removeDocument"
 
         private const val EXTRA_URI = "uri"
         private const val EXTRA_PARENT_URI = "parentUri"
-        private const val EXTRA_TARGET_URI = "targetUri"
+        private const val EXTRA_TARGET_URI = "android.content.extra.TARGET_URI"
 
         private const val MAX_DOCUMENT_DEPTH = 64
         private const val MAX_DIRECTORY_ENTRIES = 10_000
         private const val MAX_DOCUMENT_ID_LENGTH = 4_096
 
-        private fun String.appendChild(name: String) =
-            if (endsWith('/')) "$this$name" else "$this/$name"
+        private fun String.appendChild(name: String) = "$this/$name"
 
         private val String.isValidPathSegment: Boolean
             get() = isNotEmpty() && this != "." && this != ".." &&
@@ -893,7 +1062,21 @@ class PrivateStorageProvider : DocumentsProvider() {
         private val File.mimeType: String
             get() = extension.takeIf { it.isNotEmpty() }?.let {
                 MimeTypeMap.getSingleton().getMimeTypeFromExtension(it.lowercase())
-            } ?: "application/octet-stream"
+            } ?: MIME_TYPE_OCTET_STREAM
+
+        private val StructStat.isSupportedDocument: Boolean
+            get() = OsConstants.S_ISDIR(st_mode) ||
+                    OsConstants.S_ISREG(st_mode) ||
+                    OsConstants.S_ISLNK(st_mode)
+
+        private fun String.matchesMimeType(mimeType: String): Boolean {
+            val filter = substringBefore(';').trim().lowercase()
+            val normalizedMimeType = mimeType.lowercase()
+
+            return filter == "*/*" || filter == normalizedMimeType ||
+                    filter.endsWith("/*") &&
+                    normalizedMimeType.startsWith(filter.substringBefore('/') + '/')
+        }
 
         private val File.existsWithoutFollowingLinks: Boolean
             get() = try {
