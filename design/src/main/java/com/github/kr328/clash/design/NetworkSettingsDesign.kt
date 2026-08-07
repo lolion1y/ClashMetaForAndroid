@@ -22,14 +22,20 @@ class NetworkSettingsDesign(
     running: Boolean,
 ) : Design<NetworkSettingsDesign.Request>(context) {
     enum class Request {
-        StartAccessControlList
+        StartAccessControlList,
+        AccessControlModeChanged,
     }
 
     private val binding = DesignSettingsCommonBinding
         .inflate(context.layoutInflater, context.root, false)
+    private lateinit var accessControlMode: SelectableListPreference<AccessControlMode>
 
     override val root: View
         get() = binding.root
+
+    fun setAccessControlModeEnabled(enabled: Boolean) {
+        accessControlMode.enabled = enabled
+    }
 
     init {
         binding.surface = surface
@@ -109,7 +115,7 @@ class NetworkSettingsDesign(
                 configure = vpnDependencies::add,
             )
 
-            selectableList(
+            accessControlMode = selectableList(
                 value = srvStore::accessControlMode,
                 values = AccessControlMode.values(),
                 valuesText = arrayOf(
@@ -118,8 +124,11 @@ class NetworkSettingsDesign(
                     R.string.deny_selected_apps
                 ),
                 title = R.string.access_control_mode,
-                configure = vpnDependencies::add,
-            )
+            ) {
+                listener = OnChangedListener {
+                    requests.trySend(Request.AccessControlModeChanged)
+                }
+            }
 
             clickable(
                 title = R.string.access_control_packages,
