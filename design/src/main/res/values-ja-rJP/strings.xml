@@ -97,6 +97,8 @@
     <string name="override">オーバライド</string>
     <string name="auto_restart">自動リスタート</string>
     <string name="allow_clash_auto_restart">Clashの自動リスタートを許可</string>
+    <string name="access_private_storage">プライベートストレージへのアクセス</string>
+    <string name="access_private_storage_summary">サードパーティ製アプリによる、このアプリのプライベートストレージの読み取りと変更を許可します</string>
     <string name="route_system_traffic">ルートシステムトラフィック</string>
     <string name="routing_via_vpn_service">全てのトラフィックをVPNサービス経由でルーティング</string>
     <string name="vpn_service_options">VPNサービスのオプション</string>

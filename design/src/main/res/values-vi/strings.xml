@@ -40,6 +40,8 @@
     <string name="allow_bypass">Cho phép bỏ qua</string>
     <string name="allow_bypass_summary">Cho phép tất cả các ứng dụng bỏ qua kết nối VPN này</string>
     <string name="allow_clash_auto_restart">Cho phép Clash tự khởi động lại</string>
+    <string name="access_private_storage">Truy cập bộ nhớ riêng tư</string>
+    <string name="access_private_storage_summary">Cho phép ứng dụng bên thứ ba đọc và sửa đổi bộ nhớ riêng tư của ứng dụng này</string>
     <string name="allow_lan">Cho phép mạng LAN</string>
     <string name="allow_selected_apps">Cho phép các ứng dụng đã chọn</string>
     <string name="always_dark">Luôn tối</string>

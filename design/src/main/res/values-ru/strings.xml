@@ -118,6 +118,8 @@
 
     <string name="auto_restart">Автоматический перезапуск</string>
     <string name="allow_clash_auto_restart">Разрешить Clash автоматически перезапускаться</string>
+    <string name="access_private_storage">Доступ к приватному хранилищу</string>
+    <string name="access_private_storage_summary">Разрешить сторонним приложениям читать и изменять данные в приватном хранилище этого приложения</string>
 
     <string name="route_system_traffic">Маршрутизировать системный трафик</string>
     <string name="routing_via_vpn_service">Автоматически маршрутизировать весь системный трафик через VPN</string>
