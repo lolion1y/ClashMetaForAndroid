@@ -1,6 +1,6 @@
 package com.github.kr328.clash
 
-import android.content.ComponentName
+// import android.content.ComponentName
 import android.content.pm.PackageManager
 import com.github.kr328.clash.common.util.componentName
 import com.github.kr328.clash.design.AppSettingsDesign

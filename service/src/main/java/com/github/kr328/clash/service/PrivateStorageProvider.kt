@@ -211,8 +211,6 @@ class PrivateStorageProvider : DocumentsProvider() {
     }
 
     private fun deleteDocument(documentId: String, revokeRootPermission: Boolean) {
-        enforceAccess()
-
         val file = retrieveFile(documentId)
             ?: throw FileNotFoundException("$documentId not found")
 
@@ -855,7 +853,6 @@ class PrivateStorageProvider : DocumentsProvider() {
             putString("message", message)
     }
 
-    @Suppress("DEPRECATION")
     private val Bundle.documentUri: Uri?
         get() = uri(EXTRA_URI)
 
@@ -877,14 +874,13 @@ class PrivateStorageProvider : DocumentsProvider() {
 
         private const val EXTRA_URI = "uri"
         private const val EXTRA_PARENT_URI = "parentUri"
-        private const val EXTRA_TARGET_URI = "targetUri"
+        private const val EXTRA_TARGET_URI = "android.content.extra.TARGET_URI"
 
         private const val MAX_DOCUMENT_DEPTH = 64
         private const val MAX_DIRECTORY_ENTRIES = 10_000
         private const val MAX_DOCUMENT_ID_LENGTH = 4_096
 
-        private fun String.appendChild(name: String) =
-            if (endsWith('/')) "$this$name" else "$this/$name"
+        private fun String.appendChild(name: String) = "$this/$name"
 
         private val String.isValidPathSegment: Boolean
             get() = isNotEmpty() && this != "." && this != ".." &&
