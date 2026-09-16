@@ -59,6 +59,13 @@ dependencies {
 afterEvaluate {
     tasks.withType(GolangBuildTask::class.java).forEach {
         it.inputs.dir(golangSource)
+
+        val commandLine = it.commandLine.toMutableList()
+        val ldflagsIndex = commandLine.indexOf("-ldflags")
+        if (ldflagsIndex != -1) {
+            commandLine[ldflagsIndex + 1] += " -buildid="
+            it.setCommandLine(commandLine)
+        }
     }
 }
 
