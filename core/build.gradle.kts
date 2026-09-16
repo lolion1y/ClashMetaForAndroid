@@ -14,7 +14,7 @@ val golangSource = file("src/main/golang/native")
 golang {
     sourceSets {
         create("alpha") {
-            tags.set(listOf("foss","with_gvisor","cmfa"))
+            tags.set(listOf("foss","with_gvisor","cmfa","no_fake_tcp","no_tailscale","no_zerotier","no_easytier"))
             srcDir.set(file("src/foss/golang"))
         }
         create("meta") {
