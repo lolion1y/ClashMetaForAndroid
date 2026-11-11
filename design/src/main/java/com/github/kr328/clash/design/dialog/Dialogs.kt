@@ -2,6 +2,7 @@ package com.github.kr328.clash.design.dialog
 
 import android.app.Dialog
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -9,8 +10,10 @@ import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import com.github.kr328.clash.common.compat.isAllowForceDarkCompat
+import com.github.kr328.clash.common.compat.isNavigationBarHiddenCompat
 import com.github.kr328.clash.common.compat.isSystemBarsTranslucentCompat
 import com.github.kr328.clash.design.R
+import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.ui.Insets
 import com.github.kr328.clash.design.ui.Surface
 import com.github.kr328.clash.design.util.getPixels
@@ -30,6 +33,10 @@ class AppBottomSheetDialog(context: Context) : BottomSheetDialog(context) {
         window!!.apply {
             isSystemBarsTranslucentCompat = true
             isAllowForceDarkCompat = false
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                isNavigationBarHiddenCompat = UiStore(context).hideNavigationBar
+            }
         }
 
         findViewById<ViewGroup>(com.google.android.material.R.id.container)?.apply {
@@ -79,6 +86,10 @@ class FullScreenDialog(
 
         window!!.apply {
             isSystemBarsTranslucentCompat = true
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                isNavigationBarHiddenCompat = UiStore(context).hideNavigationBar
+            }
 
             setLayout(
                 WindowManager.LayoutParams.MATCH_PARENT,

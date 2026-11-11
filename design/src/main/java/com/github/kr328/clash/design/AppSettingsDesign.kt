@@ -1,6 +1,7 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
+import android.os.Build
 import android.view.View
 import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
 import com.github.kr328.clash.design.model.Behavior
@@ -92,6 +93,19 @@ class AppSettingsDesign(
             ) {
                 listener = OnChangedListener {
                     requests.trySend(Request.ReCreateAllActivities)
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                switch(
+                    value = uiStore::hideNavigationBar,
+                    icon = R.drawable.ic_baseline_hide,
+                    title = R.string.hide_navigation_bar_title,
+                    summary = R.string.hide_navigation_bar_desc,
+                ) {
+                    listener = OnChangedListener {
+                        requests.trySend(Request.ReCreateAllActivities)
+                    }
                 }
             }
 

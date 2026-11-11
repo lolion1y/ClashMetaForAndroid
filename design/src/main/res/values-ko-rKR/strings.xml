@@ -266,6 +266,8 @@
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>
+    <string name="hide_navigation_bar_title">탐색 모음 숨기기</string>
+    <string name="hide_navigation_bar_desc">제스처 탐색 하단의 흰색 막대를 숨깁니다</string>
     <string name="import_from_qr_no_permission">카메라 접근이 제한되었습니다. 설정에서 허용해 주세요.</string>
     <string name="import_from_qr_exception">처리되지 않은 시스템 예외가 발생했습니다.</string>
 </resources>

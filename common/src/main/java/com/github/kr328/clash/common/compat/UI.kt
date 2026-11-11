@@ -8,6 +8,8 @@ import android.view.View
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.Window
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.view.WindowManager
@@ -108,6 +110,36 @@ var Window.isLightNavigationBarCompat: Boolean
                 decorView.systemUiVisibility =
                     decorView.systemUiVisibility and SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
             }
+        }
+    }
+
+var Window.isNavigationBarHiddenCompat: Boolean
+    get() {
+        throw UnsupportedOperationException("set value only")
+    }
+    set(value) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            decorView.windowInsetsController?.apply {
+                if (value) {
+                    systemBarsBehavior =
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    hide(WindowInsets.Type.navigationBars())
+                } else {
+                    systemBarsBehavior = WindowInsetsController.BEHAVIOR_DEFAULT
+                    show(WindowInsets.Type.navigationBars())
+                }
+            }
+        } else {
+            decorView.systemUiVisibility =
+                if (value) {
+                    decorView.systemUiVisibility or
+                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                } else {
+                    decorView.systemUiVisibility and
+                            (View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY).inv()
+                }
         }
     }
 

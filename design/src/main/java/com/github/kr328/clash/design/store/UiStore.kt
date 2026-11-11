@@ -41,6 +41,11 @@ class UiStore(context: Context) {
         defaultValue = false,
     )
 
+    var hideNavigationBar: Boolean by store.boolean(
+        key = "hide_navigation_bar",
+        defaultValue = true,
+    )
+
     var proxyExcludeNotSelectable by store.boolean(
         key = "proxy_exclude_not_selectable",
         defaultValue = false,

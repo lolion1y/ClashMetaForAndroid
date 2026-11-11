@@ -43,6 +43,8 @@
     <string name="hide_app_icon_desc">可以在拨号盘输入 *#*#252746382#*#* 打开应用</string>
     <string name="hide_from_recents_title">从最近任务隐藏</string>
     <string name="hide_from_recents_desc">在最近任务中隐藏应用</string>
+    <string name="hide_navigation_bar_title">隐藏底部导航条</string>
+    <string name="hide_navigation_bar_desc">隐藏手势导航底部小白条</string>
     <string name="history">历史</string>
     <string name="import_from_file">从文件导入</string>
     <string name="import_from_url">从 URL 导入</string>
