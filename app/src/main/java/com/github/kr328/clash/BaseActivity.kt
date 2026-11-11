@@ -11,6 +11,7 @@ import androidx.core.content.getSystemService
 import com.github.kr328.clash.common.compat.isAllowForceDarkCompat
 import com.github.kr328.clash.common.compat.isLightNavigationBarCompat
 import com.github.kr328.clash.common.compat.isLightStatusBarsCompat
+import com.github.kr328.clash.common.compat.isNavigationBarHiddenCompat
 import com.github.kr328.clash.common.compat.isSystemBarsTranslucentCompat
 import com.github.kr328.clash.core.bridge.ClashException
 import com.github.kr328.clash.design.Design
@@ -217,7 +218,19 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
             window.isLightNavigationBarCompat = resolveThemedBoolean(android.R.attr.windowLightNavigationBar)
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarHiddenCompat = uiStore.hideNavigationBar
+        }
+
         this.dayNight = dayNight
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        if (hasFocus && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarHiddenCompat = uiStore.hideNavigationBar
+        }
     }
 
     enum class Event {

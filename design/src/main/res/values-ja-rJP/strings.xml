@@ -266,6 +266,8 @@
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>
+    <string name="hide_navigation_bar_title">ナビゲーションバーを非表示</string>
+    <string name="hide_navigation_bar_desc">ジェスチャーナビゲーション下部の白いバーを非表示にします</string>
     <string name="import_from_qr_no_permission">カメラのアクセスが制限されています。設定から有効にしてください。</string>
     <string name="import_from_qr_exception">システムで予期しない例外が発生しました。</string>
 </resources>

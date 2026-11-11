@@ -263,6 +263,8 @@
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>
+    <string name="hide_navigation_bar_title">隱藏底部導覽列</string>
+    <string name="hide_navigation_bar_desc">隱藏手勢導覽底部小白條</string>
     <string name="import_from_qr_no_permission">相機權限受限，請前往設定開啟。</string>
     <string name="import_from_qr_exception">發生系統未知異常，操作失敗。</string>
 </resources>
