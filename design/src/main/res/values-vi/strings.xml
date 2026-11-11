@@ -253,6 +253,8 @@
     <string name="vpn_service_options">Tuỳ chọn VpnService</string>
     <string name="warning">Cảnh báo</string>
     <string name="import_from_qr">Nhập từ Mã QR</string>
+    <string name="hide_from_recents_title">Ẩn khỏi ứng dụng gần đây</string>
+    <string name="hide_from_recents_desc">Ẩn ứng dụng khỏi màn hình ứng dụng gần đây</string>
     <string name="hide_navigation_bar_title">Ẩn thanh điều hướng</string>
     <string name="hide_navigation_bar_desc">Ẩn thanh trắng ở cuối điều hướng bằng cử chỉ</string>
     <string name="import_from_qr_no_permission">Quyền truy cập camera bị hạn chế. Vui lòng bật trong Cài đặt.</string>

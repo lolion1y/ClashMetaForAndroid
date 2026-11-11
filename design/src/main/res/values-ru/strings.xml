@@ -330,6 +330,8 @@
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>
+    <string name="hide_from_recents_title">Скрывать из списка недавних приложений</string>
+    <string name="hide_from_recents_desc">Скрывать приложение с экрана недавних приложений</string>
     <string name="hide_navigation_bar_title">Скрыть панель навигации</string>
     <string name="hide_navigation_bar_desc">Скрывать белую полосу внизу при жестовой навигации</string>
     <string name="import_from_qr_no_permission">Доступ к камере ограничен. Разрешите его в настройках.</string>
